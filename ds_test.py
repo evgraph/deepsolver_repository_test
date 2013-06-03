@@ -17,6 +17,12 @@ class Package:
 	def __str__(self):
 		return "[%s]" % self.name
 
+	def __eq__(x, y):
+		return x.name == y.name
+
+	def __hash__(self):
+		return hash(self.name)
+
 	@property
 	def require_conflicts(self):
 		return list(set(self.requires) | set(self.conflicts))
@@ -27,13 +33,7 @@ class IndexParser:
 		self.index_filename = 'rpms.data.gz'
 
 	def get_packages_from_index_file(self, data_file):
-		"""
-		�������-������ ������� ��� �����. 
-		TODO: ��������� �����?
-		���������� ���������, ������ ������� �������� �������� ������������� ������
-		� ���������� � ������
-		TODO: ������ ����� ��� ������ ����� Package
-		"""
+
 		file = gzip.open(data_file, "rb")
 
 		while True:
@@ -88,9 +88,7 @@ class IndexParser:
 			yield current_package
 
 	def get_packages_from_index_files(self, index_files=[]):
-		"""
-		TODO: ��� ���������, ��� ����������?
-		"""
+
 		for file in index_files:
 			for package in self.get_packages_from_index_file(file):
 				yield package
@@ -131,7 +129,7 @@ class IndexTestResult:
 		if pkg not in self.damages_by_type_and_packages[type].keys():
 			self.damages_by_type_and_packages[type][pkg] = set()
 
-		self.damages_by_type_and_packages[type][pkg].add(pkg)
+		self.damages_by_type_and_packages[type][pkg].add(damage)
 
 	def add_unmatched_provide(self, pkg, damage):
 		self.add_damage(pkg, damage, DAMAGE_TYPE_UNMATCHED_PROVIDE)
@@ -150,7 +148,7 @@ class IndexTestResult:
 		return len(reduce(lambda res, x: res | x, map(lambda x: set(x), self.damages_by_type_and_packages)))
 
 	def diff(self, other):
-		result = IndexTestResult(list(set(self.packages).intersection(set(other.packages))))
+		result = IndexTestResult(list(set(self.packages).symmetric_difference(set(other.packages))))
 
 		for type in DAMAGE_TYPES:
 			result.damages_by_type[type] = self.damages_by_type[type] - other.damages_by_type[type]
@@ -167,7 +165,7 @@ class IndexTestResult:
 
 	def __str__(self):
 		return """Found %d packages"
-%d packages is damaged
+%d packages are damaged
 %d packages have unmatched provides
 %d packages have unmatched requires
 %d packages have unmatched conflicts""" % (
@@ -203,9 +201,7 @@ class IndexTester:
 		self.unmet_ignore_list.append(del_pkg.short_name)
 
 	def test_index(self, packages):
-		"""
-		TODO: �� �� �����
-		"""
+
 		provides_dirs = self.provides_dirs
 
 		provides_set = set()
